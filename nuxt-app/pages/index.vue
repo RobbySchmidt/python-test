@@ -8,7 +8,7 @@
           v-model="newTodo"
           class="w-full" />
         <UButton
-          label="create Task"
+          label="create Todo"
           @click="addTodo()"/>
       </div>
       <div>
@@ -64,6 +64,9 @@
     if (!newTodo.value.trim()) {
       errorMessage.value = 'Todo cannot be empty.'
       successMessage.value = ''
+      setTimeout(() => {
+        errorMessage.value = ''
+      }, 3000);
       return
     }
 
@@ -78,7 +81,7 @@
         method: 'POST',
         body: todo
       })
-      successMessage.value = `New Task "${newTask.value}" has been successfully added`
+      successMessage.value = `New Todo "${newTodo.value}" has been successfully added`
       errorMessage.value = ''
       newTodo.value = ''
       fetchTodos()
@@ -101,12 +104,18 @@
       await $fetch(`http://localhost:8000/todos/${id}`, {
         method: 'DELETE'
       })
-      successMessage.value = 'Task deleted successfully.'
+      successMessage.value = 'Todo deleted successfully.'
       errorMessage.value = ''
       fetchTodos()
+      setTimeout(() => {
+        successMessage.value = ''
+      }, 3000);
     } catch (error) {
-      errorMessage.value = 'Failed to delete task.'
+      errorMessage.value = 'Failed to delete Todo.'
       successMessage.value = ''
+      setTimeout(() => {
+        errorMessage.value = ''
+      }, 3000);
       console.error(error)
     }
   }
