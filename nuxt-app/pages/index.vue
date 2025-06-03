@@ -78,13 +78,19 @@
         method: 'POST',
         body: todo
       })
-      successMessage.value = 'Task created successfully.'
+      successMessage.value = `New Task "${newTask.value}" has been successfully added`
       errorMessage.value = ''
       newTodo.value = ''
       fetchTodos()
+      setTimeout(() => {
+        successMessage.value = ''
+      }, 3000);
     } catch (error) {
       errorMessage.value = 'Failed to create task.'
       successMessage.value = ''
+      setTimeout(() => {
+        errorMessage.value = ''
+      }, 3000);
       console.error(error)
     }
   }
