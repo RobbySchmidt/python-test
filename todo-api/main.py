@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -37,3 +38,11 @@ def delete_todo(todo_id: int):
     global todos
     todos = [t for t in todos if t.id != todo_id]
     return {"message": "Deleted"}
+
+@app.patch("/todos/{todo_id}", response_model=Todo)
+def update_todo(todo_id: int, updated_todo: Todo):
+    for index, todo in enumerate(todos):
+        if todo.id == todo_id:
+            todos[index] = updated_todo
+            return updated_todo
+    raise HTTPException(status_code=404, detail="Todo not found")

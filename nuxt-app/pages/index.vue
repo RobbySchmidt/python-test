@@ -6,11 +6,10 @@
           type="text"
           spellcheck="false"
           v-model="newTodo"
-          class="ring rounded-xs w-full" />
-          <UButton
-            label="create Task"
-            @click="addTodo()">
-          </UButton>
+          class="w-full" />
+        <UButton
+          label="create Task"
+          @click="addTodo()"/>
       </div>
       <div>
         <span v-if="successMessage" class="text-green-500">
@@ -27,14 +26,14 @@
         <div class="flex gap-2">
           <span 
             @click="checkTask(todo.id)" 
-            class="text-white border-2 rounded-full p-1 cursor-pointer flex-none block"
+            class="text-white border-2 rounded-full p-1 cursor-pointer w-6 h-6 flex items-center"
             :class="todo.completed ? 'bg-green-500 border-green-500' : 'bg-yellow-500 border-yellow-500'">
-            <UIcon name="i-lucide-lightbulb" class="size-4" />
+            <UIcon name="i-lucide-check" class="size-4" />
           </span>
           <span 
             @click="deleteTodo(todo.id)" 
-            class="text-white bg-red-500 border-2 border-red-500 rounded-full p-1 cursor-pointer flex-none block">
-            <UIcon name="i-lucide-lightbulb" class="size-4" />
+            class="text-white bg-red-500 border-2 border-red-500 rounded-full p-1 cursor-pointer w-6 h-6 flex items-center">
+            <UIcon name="i-lucide-x" class="size-4" />
           </span>
         </div>
       </div>
