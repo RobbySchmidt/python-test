@@ -29,12 +29,12 @@
             @click="checkTask(todo.id)" 
             class="text-white border-2 rounded-full p-1 cursor-pointer flex-none block"
             :class="todo.completed ? 'bg-green-500 border-green-500' : 'bg-yellow-500 border-yellow-500'">
-            <Check class="size-4" />
+            <UIcon name="i-lucide-lightbulb" class="size-4" />
           </span>
           <span 
             @click="deleteTodo(todo.id)" 
             class="text-white bg-red-500 border-2 border-red-500 rounded-full p-1 cursor-pointer flex-none block">
-            <X class="size-4" />
+            <UIcon name="i-lucide-lightbulb" class="size-4" />
           </span>
         </div>
       </div>
@@ -118,7 +118,7 @@
 
     try {
       await $fetch(`http://localhost:8000/todos/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: updatedTodo
       })
       fetchTodos()
