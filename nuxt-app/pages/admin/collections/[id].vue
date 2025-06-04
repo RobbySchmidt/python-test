@@ -1,6 +1,11 @@
 <template>
   <div class="container mx-auto p-8 max-w-4xl">
-    <h1 class="text-2xl font-bold mb-6">
+    <UButton @click="$router.push('/admin/collections')" class="group duration-300 ease-in-out cursor-pointer">
+      <UIcon class="group-hover:-translate-x-1 duration-300 ease-in-out" name="i-lucide-arrow-left" />
+      Back
+    </UButton>
+
+    <h1 class="text-2xl font-bold my-4">
       Manage Collection: <span class="text-blue-600">{{ collection?.name || 'Loading...' }}</span>
     </h1>
 
@@ -11,12 +16,19 @@
       <div class="flex gap-2 mb-4">
         <UInput v-model="newFieldName" placeholder="Field name" />
         <USelect v-model="newFieldType" :items="items" class="w-48" />
-        <UButton label="Add Field" @click="addField" />
+        <UButton label="Add Field" @click="addField" class="duration-300 ease-in-out cursor-pointer"/>
       </div>
 
       <ul>
-        <li v-for="field in fields" :key="field.id" class="py-1 border-b">
-          {{ field.name }} ({{ field.type }})
+        <li
+          v-for="field in fields"
+          :key="field.id"
+          class="py-1 border-b flex justify-between items-center"
+        >
+          <span>{{ field.name }} ({{ field.type }})</span>
+          <button @click="deleteField(field.id)" class="text-red-600 hover:underline text-sm">
+            Delete
+          </button>
         </li>
       </ul>
     </section>
@@ -71,11 +83,7 @@
       <div class="border p-4 rounded">
         <h3 class="text-lg font-semibold mb-3">Add New Record</h3>
         <form @submit.prevent="addRecord" class="space-y-4">
-          <div
-            v-for="field in fields"
-            :key="field.id"
-            class="flex flex-col"
-          >
+          <div v-for="field in fields" :key="field.id" class="flex flex-col">
             <label :for="field.name" class="mb-1 font-medium">{{ field.name }}</label>
             <template v-if="field.type.toLowerCase() === 'boolean'">
               <UCheckbox
@@ -102,7 +110,7 @@
             </template>
           </div>
 
-          <UButton label="Add Record" type="submit" />
+          <UButton class="duration-300 ease-in-out cursor-pointer" label="Add Record" type="submit" />
         </form>
       </div>
     </section>
@@ -116,7 +124,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-// Optionally import UCheckbox, UInput, USelect, UButton if not globally registered
 
 const route = useRoute()
 const collectionId = route.params.id
@@ -182,6 +189,22 @@ const addField = async () => {
     setTimeout(() => (successMessage.value = ''), 3000)
   } catch {
     errorMessage.value = 'Failed to add field.'
+  }
+}
+
+const deleteField = async (fieldId: string) => {
+
+  try {
+    await $fetch(`http://localhost:8000/collections/${collectionId}/fields/${fieldId}`, {
+      method: 'DELETE',
+    })
+    successMessage.value = 'Field deleted.'
+    errorMessage.value = ''
+    fetchFields()
+    fetchRecords()
+    setTimeout(() => (successMessage.value = ''), 3000)
+  } catch {
+    errorMessage.value = 'Failed to delete field.'
   }
 }
 

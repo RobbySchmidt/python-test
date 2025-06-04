@@ -81,6 +81,17 @@ def add_field(collection_id: str, field: FieldDef):
         session.refresh(field)
         return field
 
+@app.delete("/collections/{collection_id}/fields/{field_id}")
+def delete_field(collection_id: str, field_id: str):
+    with Session(engine) as session:
+        field = session.get(FieldDef, field_id)
+        if not field or field.collection_id != collection_id:
+            raise HTTPException(status_code=404, detail="Field not found")
+        session.delete(field)
+        session.commit()
+        return {"message": "Field deleted successfully"}
+
+
 
 # Records
 @app.get("/collections/{collection_id}/records", response_model=List[Record])
