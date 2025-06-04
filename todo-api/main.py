@@ -5,6 +5,7 @@ from sqlalchemy import Column, JSON  # ✅ Import Column and JSON
 from typing import Optional, List
 from uuid import uuid4
 from datetime import datetime
+from sqlmodel import delete
 
 app = FastAPI()
 
@@ -116,3 +117,18 @@ def delete_record(record_id: str):
         session.delete(record)
         session.commit()
         return {"message": "Deleted"}
+
+@app.delete("/collections/{collection_id}")
+def delete_collection(collection_id: str):
+    with Session(engine) as session:
+        collection = session.get(Collection, collection_id)
+        if not collection:
+            raise HTTPException(status_code=404, detail="Collection not found")
+        
+        # Optional: delete related fields and records if you want to clean up the DB
+        session.exec(delete(FieldDef).where(FieldDef.collection_id == collection_id))
+        session.exec(delete(Record).where(Record.collection_id == collection_id))
+        
+        session.delete(collection)
+        session.commit()
+        return {"message": "Collection deleted"}

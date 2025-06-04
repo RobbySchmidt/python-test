@@ -45,7 +45,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 
-const COLLECTION_ID = '0f795d79-d127-4e59-ad8d-0d78be74dfdc'  // your actual collection id
+const COLLECTION_ID = '5832fc0f-6339-4ee3-901f-46a758600d99'  // your actual collection id
 const API_BASE = `http://localhost:8000/collections/${COLLECTION_ID}`
 const RECORDS_API = `${API_BASE}/records`
 

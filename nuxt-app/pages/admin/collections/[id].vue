@@ -10,11 +10,7 @@
 
       <div class="flex gap-2 mb-4">
         <UInput v-model="newFieldName" placeholder="Field name" />
-        <select v-model="newFieldType" class="border rounded px-2">
-          <option value="string">String</option>
-          <option value="boolean">Boolean</option>
-          <option value="number">Number</option>
-        </select>
+        <USelect v-model="newFieldType" :items="items" class="w-48" />
         <UButton label="Add Field" @click="addField" />
       </div>
 
@@ -51,12 +47,11 @@
               :key="field.id"
               class="border border-gray-300 px-3 py-1"
             >
-              <!-- Show boolean as checkbox -->
-              <template v-if="field.type === 'boolean'">
-                <input
-                  type="checkbox"
-                  :checked="record.data[field.name]"
-                  @change="toggleBoolean(record, field.name)"
+              <template v-if="field.type.toLowerCase() === 'boolean'">
+                <UCheckbox
+                  :name="`record-${record.id}-${field.name}`"
+                  :model-value="record.data[field.name]"
+                  @update:model-value="(val) => toggleBoolean(record, field.name, val)"
                 />
               </template>
               <template v-else>
@@ -82,28 +77,26 @@
             class="flex flex-col"
           >
             <label :for="field.name" class="mb-1 font-medium">{{ field.name }}</label>
-            <template v-if="field.type === 'boolean'">
-              <input
-                type="checkbox"
+            <template v-if="field.type.toLowerCase() === 'boolean'">
+              <UCheckbox
                 :id="field.name"
                 v-model="newRecordData[field.name]"
+                :name="field.name"
               />
             </template>
-            <template v-else-if="field.type === 'number'">
-              <input
+            <template v-else-if="field.type.toLowerCase() === 'number'">
+              <UInput
                 type="number"
                 :id="field.name"
                 v-model.number="newRecordData[field.name]"
-                class="border rounded p-1"
                 required
               />
             </template>
             <template v-else>
-              <input
+              <UInput
                 type="text"
                 :id="field.name"
                 v-model="newRecordData[field.name]"
-                class="border rounded p-1"
                 required
               />
             </template>
@@ -120,36 +113,36 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, watch } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+// Optionally import UCheckbox, UInput, USelect, UButton if not globally registered
 
 const route = useRoute()
 const collectionId = route.params.id
+
+const items = ref(['string', 'boolean', 'number'])
+const newFieldType = ref('string')
+const newFieldName = ref('')
 
 const collection = ref(null)
 const fields = ref([])
 const records = ref([])
 
-const newFieldName = ref('')
-const newFieldType = ref('string')
-
-const newRecordData = ref({})
+const newRecordData = ref<{ [key: string]: any }>({})
 
 const successMessage = ref('')
 const errorMessage = ref('')
 
-// Fetch collection info
 const fetchCollection = async () => {
   try {
     const res = await $fetch(`http://localhost:8000/collections`)
     collection.value = res.find(c => c.id === collectionId) || null
-  } catch (e) {
+  } catch {
     errorMessage.value = 'Failed to load collection info.'
   }
 }
 
-// Fetch fields
 const fetchFields = async () => {
   try {
     fields.value = await $fetch(`http://localhost:8000/collections/${collectionId}/fields`)
@@ -159,7 +152,6 @@ const fetchFields = async () => {
   }
 }
 
-// Fetch records
 const fetchRecords = async () => {
   try {
     records.value = await $fetch(`http://localhost:8000/collections/${collectionId}/records`)
@@ -168,7 +160,6 @@ const fetchRecords = async () => {
   }
 }
 
-// Add field
 const addField = async () => {
   const name = newFieldName.value.trim()
   if (!name) {
@@ -194,13 +185,13 @@ const addField = async () => {
   }
 }
 
-// Reset newRecordData based on fields
 function resetNewRecordData() {
   newRecordData.value = {}
   fields.value.forEach(f => {
-    if (f.type === 'boolean') {
+    const type = f.type.toLowerCase()
+    if (type === 'boolean') {
       newRecordData.value[f.name] = false
-    } else if (f.type === 'number') {
+    } else if (type === 'number') {
       newRecordData.value[f.name] = 0
     } else {
       newRecordData.value[f.name] = ''
@@ -208,11 +199,10 @@ function resetNewRecordData() {
   })
 }
 
-// Add record
 const addRecord = async () => {
-  // Validate required fields
   for (const f of fields.value) {
-    if (f.type !== 'boolean' && !newRecordData.value[f.name]) {
+    const type = f.type.toLowerCase()
+    if (type !== 'boolean' && !newRecordData.value[f.name]) {
       errorMessage.value = `Field "${f.name}" cannot be empty.`
       return
     }
@@ -234,8 +224,7 @@ const addRecord = async () => {
   }
 }
 
-// Delete record
-const deleteRecord = async (id) => {
+const deleteRecord = async (id: string) => {
   try {
     await $fetch(`http://localhost:8000/records/${id}`, {
       method: 'DELETE',
@@ -249,9 +238,8 @@ const deleteRecord = async (id) => {
   }
 }
 
-// Toggle boolean field in record inline
-const toggleBoolean = async (record, fieldName) => {
-  const updatedData = { ...record.data, [fieldName]: !record.data[fieldName] }
+const toggleBoolean = async (record: any, fieldName: string, newValue: boolean) => {
+  const updatedData = { ...record.data, [fieldName]: newValue }
   try {
     await $fetch(`http://localhost:8000/records/${record.id}`, {
       method: 'PATCH',
@@ -263,7 +251,6 @@ const toggleBoolean = async (record, fieldName) => {
   }
 }
 
-// Fetch data initially
 onMounted(() => {
   fetchCollection()
   fetchFields()
