@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, create_engine, Session, select
-from sqlalchemy import Column, JSON  # ✅ Import Column and JSON
+from sqlalchemy import Column, JSON
 from typing import Optional, List
 from uuid import uuid4
 from datetime import datetime
@@ -35,7 +35,7 @@ class FieldDef(SQLModel, table=True):
 class Record(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
     collection_id: str = Field(foreign_key="collection.id")
-    data: dict = Field(sa_column=Column(JSON))  # ✅ Store dict as JSON
+    data: dict = Field(sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -136,7 +136,7 @@ def delete_collection(collection_id: str):
         if not collection:
             raise HTTPException(status_code=404, detail="Collection not found")
         
-        # Optional: delete related fields and records if you want to clean up the DB
+        # delete related fields and records if you want to clean up the DB
         session.exec(delete(FieldDef).where(FieldDef.collection_id == collection_id))
         session.exec(delete(Record).where(Record.collection_id == collection_id))
         
