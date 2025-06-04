@@ -9,7 +9,8 @@
           class="w-full" />
         <UButton
           label="create Todo"
-          @click="addTodo()"/>
+          :disabled="loading"
+          @click="addTodo()" />
       </div>
       <div>
         <span v-if="successMessage" class="text-green-500">
@@ -20,7 +21,7 @@
         </span>
       </div>
       <div v-for="todo in todos" :key="todo.id" class="flex items-center justify-between">
-        <span :class="{ 'line-through' :todo.completed }">
+        <span :class="{ 'line-through' : todo.completed }">
           {{ todo.title }}
         </span>
         <div class="flex gap-2">
@@ -42,105 +43,123 @@
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
-  const todos = ref([])
-  const newTodo = ref('')
-  const successMessage = ref('')
-  const errorMessage = ref('')
+const COLLECTION_ID = '0f795d79-d127-4e59-ad8d-0d78be74dfdc'  // your actual collection id
+const API_BASE = `http://localhost:8000/collections/${COLLECTION_ID}`
+const RECORDS_API = `${API_BASE}/records`
 
-  // Fetch Todos from API
-  const fetchTodos = async () => {
-    try {
-      todos.value = await $fetch('http://localhost:8000/todos')
-    } catch (error) {
-      errorMessage.value = 'Failed to fetch todos.'
-      console.error(error)
-    }
+const todos = ref([])
+const newTodo = ref('')
+const successMessage = ref('')
+const errorMessage = ref('')
+const loading = ref(false)
+
+// Helper to show success or error messages with auto-clear
+const showMessage = (type, text, duration = 3000) => {
+  if (type === 'success') {
+    successMessage.value = text
+    errorMessage.value = ''
+  } else {
+    errorMessage.value = text
+    successMessage.value = ''
+  }
+  setTimeout(() => {
+    successMessage.value = ''
+    errorMessage.value = ''
+  }, duration)
+}
+
+// Fetch all todos (records) from backend and map them to flat todos
+const fetchTodos = async () => {
+  loading.value = true
+  try {
+    const records = await $fetch(RECORDS_API)
+    todos.value = records.map(r => ({
+      id: r.id,
+      title: r.data.title,
+      completed: r.data.completed
+    }))
+  } catch (error) {
+    showMessage('error', 'Failed to fetch todos.')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Add a new todo via POST request
+const addTodo = async () => {
+  if (!newTodo.value.trim()) {
+    showMessage('error', 'Todo cannot be empty.')
+    return
   }
 
-  // Add a new todo
-  const addTodo = async () => {
-    if (!newTodo.value.trim()) {
-      errorMessage.value = 'Todo cannot be empty.'
-      successMessage.value = ''
-      setTimeout(() => {
-        errorMessage.value = ''
-      }, 3000);
-      return
-    }
-
-    const todo = {
-      id: Date.now(),
+  const newRecord = {
+    data: {
       title: newTodo.value.trim(),
-      completed: false
-    }
-
-    try {
-      await $fetch('http://localhost:8000/todos', {
-        method: 'POST',
-        body: todo
-      })
-      successMessage.value = `New Todo "${newTodo.value}" has been successfully added`
-      errorMessage.value = ''
-      newTodo.value = ''
-      fetchTodos()
-      setTimeout(() => {
-        successMessage.value = ''
-      }, 3000);
-    } catch (error) {
-      errorMessage.value = 'Failed to create task.'
-      successMessage.value = ''
-      setTimeout(() => {
-        errorMessage.value = ''
-      }, 3000);
-      console.error(error)
+      completed: false,
     }
   }
 
-// Delete a todo
-  const deleteTodo = async (id) => {
-    try {
-      await $fetch(`http://localhost:8000/todos/${id}`, {
-        method: 'DELETE'
-      })
-      successMessage.value = 'Todo deleted successfully.'
-      errorMessage.value = ''
-      fetchTodos()
-      setTimeout(() => {
-        successMessage.value = ''
-      }, 3000);
-    } catch (error) {
-      errorMessage.value = 'Failed to delete Todo.'
-      successMessage.value = ''
-      setTimeout(() => {
-        errorMessage.value = ''
-      }, 3000);
-      console.error(error)
-    }
+  loading.value = true
+  try {
+    await $fetch(RECORDS_API, { method: 'POST', body: newRecord })
+    showMessage('success', `New Todo "${newTodo.value}" has been successfully added`)
+    newTodo.value = ''
+    await fetchTodos()
+  } catch (error) {
+    showMessage('error', 'Failed to create task.')
+    console.error(error)
+  } finally {
+    loading.value = false
   }
+}
 
-  // Toggle task completion
-  const checkTask = async (id) => {
-    const todo = todos.value.find(t => t.id === id)
-    if (!todo) return
+// Delete a todo by record id
+const deleteTodo = async (id) => {
+  loading.value = true
+  try {
+    await $fetch(`http://localhost:8000/records/${id}`, { method: 'DELETE' })
+    showMessage('success', 'Todo deleted successfully.')
+    await fetchTodos()
+  } catch (error) {
+    showMessage('error', 'Failed to delete Todo.')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
 
-    const updatedTodo = {
-      ...todo,
+// Toggle completion status of a todo by record id
+const checkTask = async (id) => {
+  const todo = todos.value.find(t => t.id === id)
+  if (!todo) return
+
+  const updatedRecord = {
+    data: {
+      title: todo.title,
       completed: !todo.completed
     }
-
-    try {
-      await $fetch(`http://localhost:8000/todos/${id}`, {
-        method: 'PATCH',
-        body: updatedTodo
-      })
-      fetchTodos()
-    } catch (error) {
-      errorMessage.value = 'Failed to update task.'
-      console.error(error)
-    }
   }
 
-  onMounted(fetchTodos)
+  loading.value = true
+  try {
+    await $fetch(`http://localhost:8000/records/${id}`, { method: 'PATCH', body: updatedRecord })
+    await fetchTodos()
+  } catch (error) {
+    showMessage('error', 'Failed to update task.')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Clear error message when input changes
+watch(newTodo, () => {
+  errorMessage.value = ''
+})
+
+// Load todos on page mount
+onMounted(fetchTodos)
 </script>
